@@ -1,4 +1,4 @@
-# Republic of Ostara — Tidal Mail Carrier's Passport
+# Republic of Solmere — Tidal Mail Carrier's Passport
 
 ![make.fun](https://make.fun/badge/the-passport-page-of-a-countr-2-20261121-0318.svg)
 ![rank](https://make.fun/badge/the-passport-page-of-a-countr-2-20261121-0318/top234/the-passport-page-of-a-countr-2-20261121-entry-v5/rank.svg)
@@ -8,7 +8,7 @@ Entry for the make.fun bounty [The Passport Page of a Country That Isn't There](
 
 ## The document
 
-A two-page passport spread for the fictional **Republic of Ostara** (OST),
+A two-page passport spread for the fictional **Republic of Solmere** (SLM),
 held by **Elias Marlow**, a licensed **tidal mail carrier** from
 Lowick-on-Tide. He carries the mail on foot across the tidal flats to the
 Isle of Kestrelwick — only at low water, only within the windows of the
@@ -18,7 +18,7 @@ from the tidal stations and island post office, and the round PAID causeway
 levy stamp.
 
 - **Left — data page:** portrait, ghost portrait, trilingual labels
-  (English / Ostara), signature, observations, and an MRZ whose 7-3-1
+  (English / Solmere), signature, observations, and an MRZ whose 7-3-1
   check digits are computed and verified in the generator.
 - **Right — visas page:** endorsement box, a multiple-entry visitor visa to
   the Isle of Kestrelwick, eight chronological entry/exit stamps in three

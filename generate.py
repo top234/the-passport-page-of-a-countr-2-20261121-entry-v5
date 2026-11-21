@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic generator for the Republic of Ostara passport spread (1024x1024).
+"""Deterministic generator for the Republic of Solmere passport spread (1024x1024).
 
 Builds entry.png from portrait.jpg with PIL only. No network, no randomness,
 no timestamps: re-running produces a byte-identical file.
@@ -137,7 +137,7 @@ def round_stamp(base, cx, cy, r, top_text, bottom_text, centre_lines, color,
     base.paste(layer, (int(cx - s / 2), int(cy - s / 2)), layer)
 
 
-def rect_stamp(base, x, y, w, h, station, kind, date, color, angle):
+def rect_stamp(base, x, y, w, h, station, kind, date, color, angle, note=""):
     pad = 26
     layer = Image.new("RGBA", (w + pad * 2, h + pad * 2), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
@@ -164,8 +164,24 @@ def rect_stamp(base, x, y, w, h, station, kind, date, color, angle):
     yy += 20
     f = MONOB(13)
     d.text((cx - f.getlength(date) / 2, yy), date, font=f, fill=col)
+    if note:
+        f = MONO(8)
+        d.text((cx - f.getlength(note) / 2, yy + 18), note, font=f, fill=col)
     layer = layer.rotate(angle, resample=Image.BICUBIC, expand=False)
     base.paste(layer, (int(x - pad), int(y - pad)), layer)
+
+
+def contour(d, cx, cy, rx, ry, rings=6, color=(214, 222, 233)):
+    """Faint tidal-flat contour watermark: nested wavy closed curves."""
+    for k in range(rings):
+        f = (k + 1) / rings
+        pts = []
+        for t in range(0, 361, 4):
+            a = math.radians(t)
+            wob = 1 + 0.06 * math.sin(3 * a + k * 1.7) + 0.04 * math.sin(7 * a + k)
+            pts.append((cx + rx * f * wob * math.cos(a),
+                        cy + ry * f * wob * math.sin(a)))
+        d.line(pts, fill=color, width=1)
 
 
 def emblem(d, cx, cy, r, color=NAVY):
@@ -196,16 +212,19 @@ def build():
     d.rectangle([516, 10, 1014, 1014], outline=NAVY, width=3)
     guilloche(d, 16, 16, 502, 1008)
     guilloche(d, 522, 16, 1008, 1008)
+    # faint tidal-flat contour watermarks (drawn first, text sits on top)
+    contour(d, 259, 840, 225, 95, rings=7)
+    contour(d, 765, 972, 215, 42, rings=5)
 
     # ================= LEFT: DATA PAGE =================
     LX0, LX1 = 32, 486
-    d.text((LX1 - SANSB(11).getlength("No. OST472918"), 26),
-           "No. OST472918", font=SANSB(11), fill=NAVY2)
+    d.text((LX1 - SANSB(11).getlength("No. SLM472918"), 26),
+           "No. SLM472918", font=SANSB(11), fill=NAVY2)
     emblem(d, 259, 60, 27)
-    t = "REPUBLIC OF OSTARA"
+    t = "REPUBLIC OF SOLMERE"
     f = SERIFB(21)
     d.text((259 - f.getlength(t) / 2, 94), t, font=f, fill=NAVY)
-    t = "OSTARA REPUBLIK"
+    t = "SOLMERE REPUBLIK"
     f = SANS(11)
     d.text((259 - f.getlength(t) / 2, 120), t, font=f, fill=GREYBLUE)
     t = "PASSPORT  ·  FARÐABRÉF"
@@ -246,10 +265,13 @@ def build():
     fx, fy = 198, 170
     fy = field(d, fx, fy, "SURNAME  /  ÆTTARNAMN", "MARLOW", w=180)
     fy = field(d, fx, fy, "GIVEN NAMES  /  FORNAMN", "ELIAS", w=180)
-    fy = field(d, fx, fy, "NATIONALITY  /  ÞJÓÐARN", "OSTARIAN", w=180)
+    fy = field(d, fx, fy, "NATIONALITY  /  ÞJÓÐARN", "SOLMERIAN", w=180)
     fy = field(d, fx, fy, "DATE OF BIRTH  /  FØDINGARDAG", "07 JUN 1982", w=180)
     fy = field(d, fx, fy, "PLACE OF BIRTH  /  FØDINGARSTAD", "LOWICK-ON-TIDE", w=180)
-    fy = field(d, fx, fy, "SEX  /  KYNN", "M", w=180)
+    # split row: sex + height + eyes
+    field(d, fx, fy, "SEX  /  KYNN", "M", w=80)
+    field(d, 290, fy, "HEIGHT  /  HÆÐ", "182 CM", vsize=13, w=90)
+    field(d, 388, fy, "EYES  /  AUGU", "GREY-BROWN", vsize=13, w=98)
 
     d.line([LX0, 384, LX1, 384], fill=NAVY, width=1)
     y = 396
@@ -258,7 +280,7 @@ def build():
     y = field(d, LX0, y, "AUTHORITY  /  ÚTGÁFUSTAÐUR",
               "PASSPORT OFFICE, LOWICK-ON-TIDE", vsize=12, w=210)
     y2 = 396
-    y2 = field(d, 262, y2, "PERSONAL No.  /  KENNITALA", "TML1187OST", w=224)
+    y2 = field(d, 262, y2, "PERSONAL No.  /  KENNITALA", "TML1187SLM", w=224)
     y2 = field(d, 262, y2, "OCCUPATION  /  STARF", "TIDAL MAIL CARRIER", vsize=13, w=224)
     y2 = field(d, 262, y2, "TIDAL MAIL LICENCE", "TML-1187", w=224)
 
@@ -282,8 +304,9 @@ def build():
     d.text((LX0 + 8, 648), "OBSERVATIONS  /  ATHUGASEMDIR", font=SANS(8),
            fill=GREYBLUE)
     obs = ("HOLDER IS A LICENSED TIDAL MAIL CARRIER (LIC. TML-1187). "
-           "TIDAL CROSSINGS PERMITTED ONLY WITHIN THE LOW-WATER WINDOWS "
-           "OF THE OFFICIAL OSTARA TIDE TABLE.")
+           "TIDAL CROSSINGS PERMITTED ONLY WITHIN ±1 H OF LOW WATER; "
+           "TIDE-TABLE CARD MUST BE CARRIED; CROSSINGS AFTER DARK IN "
+           "PAIRS ONLY.")
     yy = 664
     for ln in wrap(obs, SANS(11), LX1 - LX0 - 16):
         d.text((LX0 + 8, yy), ln, font=SANS(11), fill=INK)
@@ -295,7 +318,7 @@ def build():
               vsize=12, w=454)
     y = field(d, LX0, y, "EMERGENCY CONTACT", "M. MARLOW — HARBOURMASTERS' QUAY",
               vsize=12, w=454)
-    fp = ("THIS PASSPORT REMAINS THE PROPERTY OF THE REPUBLIC OF OSTARA "
+    fp = ("THIS PASSPORT REMAINS THE PROPERTY OF THE REPUBLIC OF SOLMERE "
           "AND MUST BE SURRENDERED ON DEMAND TO A PASSPORT OFFICER.")
     yy = y + 6
     for ln in wrap(fp, SANS(8), LX1 - LX0):
@@ -305,17 +328,20 @@ def build():
 
     # issuing-office round stamp overlapping the photo corner only
     round_stamp(img, 150, 340, 30, "", "",
-                ["PASSPORT OFFICE", "OSTARA", "12 FEB 2024"], NAVY2, angle=8,
+                ["PASSPORT OFFICE", "SOLMERE", "12 FEB 2024"], NAVY2, angle=8,
                 arc=False)
 
     # MRZ
     d.rectangle([LX0, 928, LX1, 994], fill=(255, 255, 255))
     d.rectangle([LX0, 928, LX1, 994], outline=NAVY, width=1)
-    m1 = "P<OSTMARLOW<<ELIAS<<<<<<<<<<<<<<<<<<<<<<<<<<"
-    m2 = "OST4729186OST8206071M3402111TML1187OST<<<<01"
+    m1 = "P<SLMMARLOW<<ELIAS<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    m2 = "SLM4729186SLM8206071M3402111TML1187SLM<<<<63"
     fm = MONO(16)
     d.text((259 - fm.getlength(m1) / 2, 936), m1, font=fm, fill=INK)
     d.text((259 - fm.getlength(m2) / 2, 960), m2, font=fm, fill=INK)
+    t = "ICAO 9303  ·  BIOMETRIC PASSPORT  ·  CHIP INSIDE FRONT COVER"
+    f = SANS(7)
+    d.text((259 - f.getlength(t) / 2, 999), t, font=f, fill=GREYBLUE)
 
     # ================= RIGHT: VISAS PAGE =================
     RX0, RX1 = 538, 992
@@ -328,23 +354,24 @@ def build():
     t = "PAGE 12"
     f = SANSB(11)
     d.text((RX1 - f.getlength(t), 26), t, font=f, fill=NAVY2)
-    t = "PASSPORT No. OST472918"
+    t = "PASSPORT No. SLM472918"
     f = SANS(10)
     d.text((RX1 - f.getlength(t), 50), t, font=f, fill=GREYBLUE)
 
     # endorsement box
     d.rectangle([RX0, 72, RX1, 176], outline=NAVY, width=2)
     d.text((RX0 + 8, 78), "ENDORSEMENT  /  ÁRITUN", font=SANSB(9), fill=NAVY)
-    end = ("TIDAL MAIL MAY BE CARRIED ONLY BETWEEN THE LOW-WATER WINDOWS "
-           "IN THE OFFICIAL TIDE TABLE. CROSSINGS OUTSIDE THE WINDOW ARE "
-           "FORBIDDEN. VALID ONLY WITH TIDAL MAIL LICENCE TML-1187. — "
-           "HARBOURMASTER, LOWICK-ON-TIDE")
+    end = ("TIDAL MAIL MAY BE CARRIED ON FOOT ACROSS THE FLATS ONLY "
+           "WITHIN ±1 H OF LOW WATER. THE TIDE-TABLE CARD MUST BE CARRIED "
+           "AT ALL TIMES. CROSSINGS AFTER DARK IN PAIRS ONLY. VALID ONLY "
+           "WITH TIDAL MAIL LICENCE TML-1187. — HARBOURMASTER, "
+           "LOWICK-ON-TIDE")
     yy = 94
     for ln in wrap(end, SANS(10), RX1 - RX0 - 16):
         d.text((RX0 + 8, yy), ln, font=SANS(10), fill=INK)
         yy += 13
 
-    # visa sticker
+    # visa sticker — service / occupational visa with barcode + bearer line
     vx0, vy0, vx1, vy1 = RX0, 190, RX1, 396
     d.rectangle([vx0, vy0, vx1, vy1], fill=(219, 233, 220))
     d.rectangle([vx0, vy0, vx1, vy1], outline=GREEN, width=2)
@@ -353,53 +380,73 @@ def build():
     for k in range(-vy1, vx1, 12):
         d.line([vx0 + 6 + k, vy1 - 6, vx0 + 6 + k + (vy1 - vy0 - 12), vy0 + 6],
                fill=(198, 216, 200), width=1)
-    t = "VISA"
-    f = SERIFB(20)
-    d.text((vx0 + 12, vy0 + 10), t, font=f, fill=GREEN)
-    t = "ISLE OF KESTRELWICK — TIDAL ISLAND"
+    t = "VISA · FARÐABRÉF"
+    f = SERIFB(18)
+    d.text((vx0 + 12, vy0 + 12), t, font=f, fill=GREEN)
+    t = "ISLE OF KESTRELWICK"
     f = SANSB(12)
-    d.text((vx0 + 78, vy0 + 16), t, font=f, fill=GREEN)
+    d.text((vx0 + 222, vy0 + 16), t, font=f, fill=GREEN)
     d.line([vx0 + 12, vy0 + 40, vx1 - 12, vy0 + 40], fill=GREEN, width=1)
-    vy = vy0 + 48
-    vy = field(d, vx0 + 12, vy, "VISA No.", "VK-2025-0441", vsize=13, w=200)
-    vy = field(d, vx0 + 12, vy, "TYPE", "MULTIPLE ENTRY", vsize=13, w=200)
-    vy = field(d, vx0 + 12, vy, "PURPOSE", "TIDAL MAIL DELIVERY", vsize=13, w=200)
-    vy2 = vy0 + 48
-    vy2 = field(d, vx0 + 232, vy2, "VALID FROM", "01 MAY 2025", vsize=13, w=200)
-    vy2 = field(d, vx0 + 232, vy2, "VALID UNTIL", "31 OCT 2025", vsize=13, w=200)
-    vy2 = field(d, vx0 + 232, vy2, "ISSUED", "22 APR 2025", vsize=13, w=200)
-    d.line([vx0 + 12, vy1 - 34, vx1 - 12, vy1 - 34], fill=GREEN, width=1)
-    t = "CONDITION: LANDING ONLY AT LOW WATER."
+    vy = vy0 + 46
+    field(d, vx0 + 12, vy, "VISA No.", "VK-2025-0441", vsize=13, w=140)
+    field(d, vx0 + 162, vy, "VALID FROM", "01 MAY 2025", vsize=13, w=130)
+    field(d, vx0 + 302, vy, "VALID UNTIL", "31 OCT 2025", vsize=13, w=130)
+    vy = vy0 + 78
+    field(d, vx0 + 12, vy, "TYPE", "SERVICE", vsize=13, w=140)
+    field(d, vx0 + 162, vy, "ENTRIES", "MULTIPLE", vsize=13, w=130)
+    field(d, vx0 + 302, vy, "STAY", "90 DAYS", vsize=13, w=130)
+    vy = vy0 + 110
+    field(d, vx0 + 12, vy, "BEARER", "ELIAS MARLOW · TIDAL MAIL", vsize=12, w=210)
+    field(d, vx0 + 232, vy, "ISSUED", "22 APR 2025", vsize=12, w=100)
+    field(d, vx0 + 330, vy, "FEE", "12 KORUNA — PAID", vsize=11, w=112)
+    # barcode (deterministic bars from the visa number digits)
+    bx, by = vx0 + 12, vy0 + 146
+    digits = "20250441"
+    x = bx
+    for ch in digits:
+        wdt = 3 + 2 * (int(ch) % 3)
+        d.rectangle([x, by, x + wdt, by + 26], fill=INK)
+        x += wdt + 2 + (int(ch) % 2)
+    d.text((bx, by + 28), "VK-2025-0441", font=MONO(7), fill=INK)
+    field(d, vx0 + 162, vy0 + 142, "PURPOSE", "TIDAL MAIL DELIVERY",
+          vsize=12, w=280)
+    d.line([vx0 + 12, vy1 - 24, vx1 - 12, vy1 - 24], fill=GREEN, width=1)
+    t = "CONDITION: FOOT CROSSING ONLY · CARRY TIDE-TABLE CARD."
     f = SANSB(10)
-    d.text((vx0 + 12, vy1 - 28), t, font=f, fill=GREEN)
+    d.text((vx0 + 12, vy1 - 19), t, font=f, fill=GREEN)
 
-    # PAID toll stamp overlapping the visa sticker
-    round_stamp(img, 925, 360, 50, "TIDAL CAUSEWAY LEVY", "12 MAY 2025",
+    # PAID toll stamp overlapping the visa sticker's bottom-right corner
+    round_stamp(img, 945, 390, 44, "TIDAL CAUSEWAY LEVY", "12 MAY 2025",
                 ["PAID", "2 KORUNA"], REDBROWN, angle=12)
 
-    # entry/exit stamps, chronological, 2 columns x 4 rows
-    stamps = [
-        ("LOWICK SORTING OFFICE", "DEPARTURE", "18 MAR 2024", BLUE, -4),
-        ("KESTRELWICK ISLAND POST OFFICE", "ARRIVAL", "18 MAR 2024", VIOLET, 3),
-        ("KESTRELWICK ISLAND POST OFFICE", "DEPARTURE", "29 APR 2024", VIOLET, 5),
-        ("LOWICK SORTING OFFICE", "ARRIVAL", "29 APR 2024", BLUE, -3),
-        ("TIDE STATION NORTH FLATS", "DEPARTURE", "12 MAY 2025", REDBROWN, -5),
-        ("KESTRELWICK ISLAND POST OFFICE", "ARRIVAL", "12 MAY 2025", VIOLET, 4),
-        ("KESTRELWICK ISLAND POST OFFICE", "DEPARTURE", "30 SEP 2025", VIOLET, -4),
-        ("HARBOURMASTERS' QUAY", "ARRIVAL", "30 SEP 2025", BLUE, 3),
-    ]
-    xs = [548, 772]
-    ys = [420, 552, 684, 816]
-    for i, (st, kind, dt, col, ang) in enumerate(stamps):
-        rect_stamp(img, xs[i % 2], ys[i // 2], 210, 118, st, kind, dt, col, ang)
+    # entry/exit stamps, chronological — mixed rectangular + round shapes,
+    # 4 ink colours, annotated with low-water times, mail bags, berths
+    rect_stamp(img, 548, 432, 210, 118, "LOWICK SORTING OFFICE", "DEPARTURE",
+               "18 MAR 2024", BLUE, -4, note="BAG 07 SEALED · LW 06:15")
+    round_stamp(img, 877, 491, 55, "KESTRELWICK ISLAND P.O.", "18 MAR 2024",
+                ["ARRIVAL", "LW 06:42"], VIOLET, angle=3)
+    rect_stamp(img, 548, 564, 210, 118, "KESTRELWICK ISLAND POST OFFICE",
+               "DEPARTURE", "29 APR 2024", VIOLET, 5,
+               note="BAG 09 SEALED · LW 07:02")
+    rect_stamp(img, 772, 564, 210, 118, "LOWICK SORTING OFFICE", "ARRIVAL",
+               "29 APR 2024", BLUE, -3, note="BERTH 3 · GATE 2")
+    rect_stamp(img, 548, 696, 210, 118, "TIDE STATION NORTH FLATS",
+               "DEPARTURE", "12 MAY 2025", REDBROWN, -5,
+               note="LW 06:42 · RADIO LOG 44/25")
+    round_stamp(img, 877, 755, 55, "KESTRELWICK ISLAND P.O.", "12 MAY 2025",
+                ["ARRIVAL", "BAG 12"], VIOLET, angle=4)
+    round_stamp(img, 653, 887, 55, "KESTRELWICK ISLAND P.O.", "30 SEP 2025",
+                ["DEPARTURE", "LW 07:11"], GREEN, angle=-4)
+    rect_stamp(img, 772, 828, 210, 118, "HARBOURMASTERS' QUAY", "ARRIVAL",
+               "30 SEP 2025", BLUE, 3, note="BERTH 1 · LW 07:11")
 
-    # tide-table strip
-    t1 = "LOW WATER · KESTRELWICK CAUSEWAY"
-    t2 = "12 MAY 2025  06:42 / 19:05    ·    30 SEP 2025  07:11 / 19:38"
+    # hook footer: tide-table strip
+    t1 = "LOW WATER — KESTRELWICK CAUSEWAY"
+    t2 = "05:58 · 18:21 — MAIL CROSSINGS ± 1 H ONLY"
     f = MONOB(11)
-    d.text((765 - f.getlength(t1) / 2, 950), t1, font=f, fill=NAVY2)
+    d.text((765 - f.getlength(t1) / 2, 956), t1, font=f, fill=NAVY2)
     f = MONO(11)
-    d.text((765 - f.getlength(t2) / 2, 970), t2, font=f, fill=GREYBLUE)
+    d.text((765 - f.getlength(t2) / 2, 976), t2, font=f, fill=GREYBLUE)
 
     img.save("entry.png", optimize=True)
     print("wrote entry.png")
